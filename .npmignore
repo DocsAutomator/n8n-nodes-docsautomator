@@ -1,0 +1,11 @@
+node_modules
+credentials
+nodes
+tests
+.env
+.DS_Store
+*.log
+tsconfig.json
+gulpfile.js
+.eslintrc.js
+.prettier* 
