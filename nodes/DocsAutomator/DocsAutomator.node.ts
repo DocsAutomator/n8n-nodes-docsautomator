@@ -130,11 +130,26 @@ export class DocsAutomator implements INodeType {
         description: 'ID of the automation to use for document creation',
       },
       {
+        displayName: 'Placeholder Notice',
+        name: 'placeholderNotice',
+        type: 'notice',
+        displayOptions: {
+          show: {
+            resource: ['document'],
+            operation: ['create'],
+          },
+        },
+        default:
+          'Select a Doc ID first, then add values for each placeholder. Already mapped placeholders will not show up in the dropdown again.',
+      },
+      {
         displayName: 'Placeholder Values',
         name: 'placeholderValues',
         type: 'fixedCollection',
         typeOptions: {
           multipleValues: true,
+          multipleValueButtonText: 'Add Placeholder Value',
+          sortable: true,
         },
         displayOptions: {
           show: {
@@ -143,7 +158,6 @@ export class DocsAutomator implements INodeType {
           },
         },
         default: {},
-        placeholder: 'Add Placeholder Value',
         options: [
           {
             name: 'values',
@@ -155,7 +169,7 @@ export class DocsAutomator implements INodeType {
                 type: 'options',
                 typeOptions: {
                   loadOptionsMethod: 'getPlaceholders',
-                  loadOptionsDependsOn: ['docId'],
+                  loadOptionsDependsOn: ['docId', 'placeholderValues'],
                 },
                 default: '',
                 description: 'Name of the placeholder',
@@ -197,6 +211,9 @@ export class DocsAutomator implements INodeType {
         this: ILoadOptionsFunctions
       ): Promise<INodePropertyOptions[]> {
         const docId = this.getCurrentNodeParameter('docId') as string;
+        const placeholderValues = this.getCurrentNodeParameter(
+          'placeholderValues'
+        ) as IDataObject;
 
         if (!docId) {
           return [{ name: 'Please provide a Doc ID first', value: '' }];
@@ -264,7 +281,21 @@ export class DocsAutomator implements INodeType {
             }
           }
 
-          return placeholders;
+          // Filter out already selected placeholders
+          const alreadySelected: string[] = [];
+          if (placeholderValues && placeholderValues.values) {
+            const values = placeholderValues.values as IDataObject[];
+            for (const item of values) {
+              if (item.name && typeof item.name === 'string') {
+                alreadySelected.push(item.name);
+              }
+            }
+          }
+
+          return placeholders.filter(
+            (placeholder) =>
+              !alreadySelected.includes(placeholder.value as string)
+          );
         } catch (error) {
           console.error('Error loading placeholders:', error);
           return [{ name: 'Error loading placeholders', value: '' }];
