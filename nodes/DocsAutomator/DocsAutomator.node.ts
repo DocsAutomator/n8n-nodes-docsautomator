@@ -16,7 +16,7 @@ export class DocsAutomator implements INodeType {
     icon: 'file:docsautomator.svg',
     group: ['transform'],
     version: 1,
-    subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
+    subtitle: 'Create Document',
     description: 'Create and manage documents with DocsAutomator',
     defaults: {
       name: 'DocsAutomator',
@@ -31,175 +31,28 @@ export class DocsAutomator implements INodeType {
     ],
     properties: [
       {
-        displayName: 'Resource',
-        name: 'resource',
+        displayName: 'Automation',
+        name: 'automationId',
         type: 'options',
-        noDataExpression: true,
-        options: [
-          {
-            name: 'Document',
-            value: 'document',
-          },
-          {
-            name: 'Automation',
-            value: 'automation',
-          },
-          {
-            name: 'Placeholder',
-            value: 'placeholder',
-          },
-        ],
-        default: 'document',
-      },
-      // Operations for Document resource
-      {
-        displayName: 'Operation',
-        name: 'operation',
-        type: 'options',
-        noDataExpression: true,
-        displayOptions: {
-          show: {
-            resource: ['document'],
-          },
-        },
-        options: [
-          {
-            name: 'Create',
-            value: 'create',
-            description: 'Create a document',
-            action: 'Create a document',
-          },
-        ],
-        default: 'create',
-      },
-      // Operations for Automation resource
-      {
-        displayName: 'Operation',
-        name: 'operation',
-        type: 'options',
-        noDataExpression: true,
-        displayOptions: {
-          show: {
-            resource: ['automation'],
-          },
-        },
-        options: [
-          {
-            name: 'Get All',
-            value: 'getAll',
-            description: 'Get all automations',
-            action: 'Get all automations',
-          },
-        ],
-        default: 'getAll',
-      },
-      // Operations for Placeholder resource
-      {
-        displayName: 'Operation',
-        name: 'operation',
-        type: 'options',
-        noDataExpression: true,
-        displayOptions: {
-          show: {
-            resource: ['placeholder'],
-          },
-        },
-        options: [
-          {
-            name: 'List',
-            value: 'list',
-            description: 'List all placeholders for a template',
-            action: 'List all placeholders for a template',
-          },
-        ],
-        default: 'list',
-      },
-      // Parameters for Create Document operation
-      {
-        displayName: 'Doc ID',
-        name: 'docId',
-        type: 'string',
-        displayOptions: {
-          show: {
-            resource: ['document'],
-            operation: ['create'],
-          },
+        typeOptions: {
+          loadOptionsMethod: 'getAutomations',
         },
         default: '',
         required: true,
-        description: 'ID of the automation to use for document creation',
-      },
-      {
-        displayName: 'Placeholder Notice',
-        name: 'placeholderNotice',
-        type: 'notice',
-        displayOptions: {
-          show: {
-            resource: ['document'],
-            operation: ['create'],
-          },
-        },
-        default:
-          'Select a Doc ID first, then add values for each placeholder. Already mapped placeholders will not show up in the dropdown again.',
+        description: 'Select the automation to use for document creation',
       },
       {
         displayName: 'Placeholder Values',
         name: 'placeholderValues',
-        type: 'fixedCollection',
-        typeOptions: {
-          multipleValues: true,
-          multipleValueButtonText: 'Add Placeholder Value',
-          sortable: true,
-        },
+        type: 'json',
         displayOptions: {
-          show: {
-            resource: ['document'],
-            operation: ['create'],
+          hide: {
+            automationId: [''],
           },
         },
-        default: {},
-        options: [
-          {
-            name: 'values',
-            displayName: 'Values',
-            values: [
-              {
-                displayName: 'Placeholder Name',
-                name: 'name',
-                type: 'options',
-                typeOptions: {
-                  loadOptionsMethod: 'getPlaceholders',
-                  loadOptionsDependsOn: ['docId', 'placeholderValues'],
-                },
-                default: '',
-                description: 'Name of the placeholder',
-              },
-              {
-                displayName: 'Placeholder Value',
-                name: 'value',
-                type: 'string',
-                default: '',
-                description: 'Value to fill in the placeholder',
-              },
-            ],
-          },
-        ],
-        description: 'Values to fill in placeholders in the template',
-      },
-      // Parameters for List Placeholders operation
-      {
-        displayName: 'Doc ID',
-        name: 'docId',
-        type: 'string',
-        displayOptions: {
-          show: {
-            resource: ['placeholder'],
-            operation: ['list'],
-          },
-        },
-        default: '',
-        required: true,
-        description: 'ID of the automation to list placeholders for',
+        default: '{}',
+        description:
+          'Enter placeholder values as a JSON object. Run the workflow once to see available placeholders in the execution log, then edit this field with the actual values.',
       },
     ],
   };
@@ -207,18 +60,9 @@ export class DocsAutomator implements INodeType {
   // Methods for loading options
   methods = {
     loadOptions: {
-      async getPlaceholders(
+      async getAutomations(
         this: ILoadOptionsFunctions
       ): Promise<INodePropertyOptions[]> {
-        const docId = this.getCurrentNodeParameter('docId') as string;
-        const placeholderValues = this.getCurrentNodeParameter(
-          'placeholderValues'
-        ) as IDataObject;
-
-        if (!docId) {
-          return [{ name: 'Please provide a Doc ID first', value: '' }];
-        }
-
         const credentials = await this.getCredentials('docsAutomatorApi');
         if (!credentials) {
           return [{ name: 'Please provide valid credentials', value: '' }];
@@ -227,78 +71,72 @@ export class DocsAutomator implements INodeType {
         const apiKey = credentials.apiKey as string;
 
         try {
-          // Fetch placeholders from the API
           const options: OptionsWithUri = {
             method: 'GET',
-            uri: 'https://api.docsautomator.co/listPlaceholdersV2',
-            qs: {
-              docId,
-            },
+            uri: 'https://api.docsautomator.co/automations',
             json: true,
             headers: {
               Authorization: `Bearer ${apiKey}`,
             },
           };
 
-          const response = await this.helpers.requestWithAuthentication.call(
-            this,
-            'docsAutomatorApi',
-            options
+          const response = await this.helpers.request?.(options);
+
+          console.log(
+            'Full automations response:',
+            JSON.stringify(response, null, 2)
           );
+          console.log('Response type:', typeof response);
+          console.log('Is array:', Array.isArray(response));
 
-          if (!response || !response.placeholders) {
-            return [{ name: 'No placeholders found', value: '' }];
-          }
+          // Handle different response formats
+          let automations: any[] = [];
 
-          const placeholders: INodePropertyOptions[] = [];
-
-          // Add main placeholders
-          if (
-            response.placeholders.main &&
-            Array.isArray(response.placeholders.main)
-          ) {
-            for (const placeholder of response.placeholders.main) {
-              placeholders.push({
-                name: placeholder,
-                value: placeholder,
-              });
-            }
-          }
-
-          // Add line items placeholders (if any)
-          for (const key in response.placeholders) {
-            if (
-              key.startsWith('line_items_') &&
-              Array.isArray(response.placeholders[key])
-            ) {
-              for (const placeholder of response.placeholders[key]) {
-                const lineItemPlaceholder = `${key}.${placeholder}`;
-                placeholders.push({
-                  name: lineItemPlaceholder,
-                  value: lineItemPlaceholder,
-                });
+          if (Array.isArray(response)) {
+            automations = response;
+          } else if (response && typeof response === 'object') {
+            // Check if automations are nested in the response
+            if (response.automations && Array.isArray(response.automations)) {
+              automations = response.automations;
+            } else if (response.data && Array.isArray(response.data)) {
+              automations = response.data;
+            } else if (response.results && Array.isArray(response.results)) {
+              automations = response.results;
+            } else {
+              // If it's an object but not in expected format, try to extract values
+              const values = Object.values(response);
+              if (values.length > 0 && Array.isArray(values[0])) {
+                automations = values[0] as any[];
               }
             }
           }
 
-          // Filter out already selected placeholders
-          const alreadySelected: string[] = [];
-          if (placeholderValues && placeholderValues.values) {
-            const values = placeholderValues.values as IDataObject[];
-            for (const item of values) {
-              if (item.name && typeof item.name === 'string') {
-                alreadySelected.push(item.name);
-              }
-            }
+          console.log('Extracted automations:', automations);
+          console.log('Automations count:', automations.length);
+
+          if (!automations || automations.length === 0) {
+            return [{ name: 'No automations found', value: '' }];
           }
 
-          return placeholders.filter(
-            (placeholder) =>
-              !alreadySelected.includes(placeholder.value as string)
-          );
-        } catch (error) {
-          console.error('Error loading placeholders:', error);
-          return [{ name: 'Error loading placeholders', value: '' }];
+          const mappedAutomations = automations.map((automation: any) => {
+            console.log('Processing automation:', automation);
+            return {
+              name:
+                automation.name ||
+                automation.title ||
+                automation.id ||
+                'Unnamed Automation',
+              value: automation.id || automation._id || automation.docId,
+            };
+          });
+
+          console.log('Mapped automations:', mappedAutomations);
+          return mappedAutomations;
+        } catch (error: any) {
+          console.error('Error loading automations:', error);
+          return [
+            { name: `Error: ${error?.message || 'Unknown error'}`, value: '' },
+          ];
         }
       },
     },
@@ -308,82 +146,101 @@ export class DocsAutomator implements INodeType {
     const items = this.getInputData();
     const returnData: IDataObject[] = [];
     const length = items.length;
-    const resource = this.getNodeParameter('resource', 0) as string;
-    const operation = this.getNodeParameter('operation', 0) as string;
 
     const credentials = await this.getCredentials('docsAutomatorApi');
     const apiKey = credentials.apiKey as string;
 
     // For each item
     for (let i = 0; i < length; i++) {
-      let responseData;
+      const automationId = this.getNodeParameter('automationId', i) as string;
+      const placeholderValuesStr = this.getNodeParameter(
+        'placeholderValues',
+        i
+      ) as string;
 
-      if (resource === 'document' && operation === 'create') {
-        const docId = this.getNodeParameter('docId', i) as string;
-        const placeholderValuesCollection = this.getNodeParameter(
-          'placeholderValues',
-          i
-        ) as IDataObject;
+      // First, fetch available placeholders for this automation
+      const placeholdersOptions: OptionsWithUri = {
+        method: 'GET',
+        uri: 'https://api.docsautomator.co/listPlaceholdersV2',
+        qs: {
+          automationId: automationId,
+        },
+        json: true,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      };
 
-        const placeholderValues: IDataObject = {};
+      let availablePlaceholders: any = {};
+      try {
+        const placeholdersResponse = await this.helpers.request?.(
+          placeholdersOptions
+        );
+        availablePlaceholders = placeholdersResponse?.placeholders || {};
 
-        if (placeholderValuesCollection && placeholderValuesCollection.values) {
-          for (const item of placeholderValuesCollection.values as IDataObject[]) {
-            placeholderValues[item.name as string] = item.value;
+        console.log('Available placeholders for automation:', automationId);
+        console.log('Main placeholders:', availablePlaceholders.main || []);
+
+        // Log line items placeholders
+        for (const key in availablePlaceholders) {
+          if (
+            key.startsWith('line_items_') &&
+            Array.isArray(availablePlaceholders[key])
+          ) {
+            console.log(`${key} placeholders:`, availablePlaceholders[key]);
           }
         }
-
-        const options: OptionsWithUri = {
-          method: 'POST',
-          uri: 'https://api.docsautomator.co/createDocument',
-          qs: {
-            docId,
-          },
-          body: placeholderValues,
-          json: true,
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        };
-
-        responseData = await this.helpers.request(options);
+      } catch (error) {
+        console.error('Error fetching placeholders:', error);
       }
 
-      if (resource === 'automation' && operation === 'getAll') {
-        const options: OptionsWithUri = {
-          method: 'GET',
-          uri: 'https://api.docsautomator.co/automations',
-          json: true,
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        };
-
-        responseData = await this.helpers.request(options);
+      // Parse placeholder values from JSON string
+      let placeholderValues: IDataObject = {};
+      try {
+        placeholderValues = JSON.parse(placeholderValuesStr);
+      } catch (error) {
+        console.error('Error parsing placeholder values JSON:', error);
+        placeholderValues = {};
       }
 
-      if (resource === 'placeholder' && operation === 'list') {
-        const docId = this.getNodeParameter('docId', i) as string;
+      // Create the document
+      const createDocOptions: OptionsWithUri = {
+        method: 'POST',
+        uri: 'https://api.docsautomator.co/createDocument',
+        qs: {
+          docId: automationId,
+        },
+        body: placeholderValues,
+        json: true,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      };
 
-        const options: OptionsWithUri = {
-          method: 'GET',
-          uri: 'https://api.docsautomator.co/listPlaceholdersV2',
-          qs: {
-            docId,
-          },
-          json: true,
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
+      try {
+        const documentResponse = await this.helpers.request?.(createDocOptions);
+
+        // Combine the response with placeholder information
+        const responseData = {
+          ...documentResponse,
+          automationId,
+          availablePlaceholders,
+          usedPlaceholders: placeholderValues,
         };
 
-        responseData = await this.helpers.request(options);
-      }
-
-      if (Array.isArray(responseData)) {
-        returnData.push.apply(returnData, responseData);
-      } else if (responseData !== undefined) {
         returnData.push(responseData);
+      } catch (error) {
+        console.error('Error creating document:', error);
+
+        // Still return placeholder information even if document creation fails
+        const errorResponse = {
+          error: error.message || 'Unknown error',
+          automationId,
+          availablePlaceholders,
+          usedPlaceholders: placeholderValues,
+        };
+
+        returnData.push(errorResponse);
       }
     }
 
