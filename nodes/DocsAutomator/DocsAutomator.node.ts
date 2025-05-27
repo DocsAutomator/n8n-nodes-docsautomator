@@ -15,7 +15,7 @@ export class DocsAutomator implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'DocsAutomator',
     name: 'docsAutomator',
-    icon: 'file:docsautomator.svg',
+    icon: 'file:docsautomator-icon.svg',
     group: ['transform'],
     version: 1,
     subtitle: 'Create Document',

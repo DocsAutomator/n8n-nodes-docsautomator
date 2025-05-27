@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1] - 2024-12-27
+
+### Changed
+
+- **Icon Update**: Changed node icon from `docsautomator.svg` to `docsautomator-icon.svg`
+
 ## [0.3.0] - 2024-12-27
 
 ### Updated
