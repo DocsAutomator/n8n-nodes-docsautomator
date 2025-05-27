@@ -42,49 +42,35 @@ export class DocsAutomator implements INodeType {
         description: 'Select the automation to use for document creation',
       },
       {
-        displayName: 'Placeholder Values',
-        name: 'placeholderValues',
-        type: 'fixedCollection',
+        displayName: 'Available Placeholders',
+        name: 'placeholderInfo',
+        type: 'notice',
         displayOptions: {
           hide: {
             automationId: [''],
           },
         },
-        default: {},
-        placeholder: 'Add Placeholder',
+        default: '',
         typeOptions: {
-          multipleValues: true,
+          loadOptionsMethod: 'getPlaceholderInfo',
+          loadOptionsDependsOn: ['automationId'],
         },
-        options: [
-          {
-            name: 'placeholder',
-            displayName: 'Placeholder',
-            values: [
-              {
-                displayName: 'Placeholder Name',
-                name: 'name',
-                type: 'options',
-                typeOptions: {
-                  loadOptionsMethod: 'getPlaceholderOptions',
-                  loadOptionsDependsOn: ['automationId'],
-                },
-                default: '',
-                required: true,
-                description: 'Select the placeholder to set a value for',
-              },
-              {
-                displayName: 'Value',
-                name: 'value',
-                type: 'string',
-                default: '',
-                required: true,
-                description: 'Enter the value for this placeholder',
-              },
-            ],
+      },
+      {
+        displayName: 'Placeholder Values',
+        name: 'placeholderValues',
+        type: 'json',
+        displayOptions: {
+          hide: {
+            automationId: [''],
           },
-        ],
+        },
+        default: '{}',
         description:
-          'Set values for the document placeholders. Select an automation first to see available placeholders.',
+          'Copy the template from above, replace the values with your data, and paste here. All placeholders are pre-filled with empty values for easy editing.',
+        typeOptions: {
+          rows: 10,
+        },
       },
     ],
   };
@@ -172,27 +158,20 @@ export class DocsAutomator implements INodeType {
         }
       },
 
-      async getPlaceholderOptions(
+      async getPlaceholderInfo(
         this: ILoadOptionsFunctions
       ): Promise<INodePropertyOptions[]> {
         const automationId = this.getCurrentNodeParameter(
           'automationId'
         ) as string;
 
-        console.log(
-          'getPlaceholderOptions called with automationId:',
-          automationId
-        );
-
         if (!automationId) {
-          console.log('No automation ID provided');
-          return [];
+          return [{ name: 'Select an automation first', value: '' }];
         }
 
         const credentials = await this.getCredentials('docsAutomatorApi');
         if (!credentials) {
-          console.log('No credentials found');
-          return [];
+          return [{ name: 'No credentials found', value: '' }];
         }
 
         const apiKey = credentials.apiKey as string;
@@ -210,38 +189,22 @@ export class DocsAutomator implements INodeType {
             },
           };
 
-          console.log(
-            'Making request to listPlaceholdersV2 with options:',
-            options
-          );
           const response = await this.helpers.request?.(options);
-          console.log(
-            'Placeholders response:',
-            JSON.stringify(response, null, 2)
-          );
 
           if (!response || !response.placeholders) {
-            console.log('No placeholders found in response');
-            return [];
+            return [{ name: 'No placeholders available', value: '' }];
           }
 
-          const placeholderOptions: INodePropertyOptions[] = [];
+          // Create a JSON template with all placeholders
+          const placeholderTemplate: any = {};
 
           // Add main placeholders
           if (
             response.placeholders.main &&
             Array.isArray(response.placeholders.main)
           ) {
-            console.log(
-              'Processing main placeholders:',
-              response.placeholders.main
-            );
             for (const placeholder of response.placeholders.main) {
-              placeholderOptions.push({
-                name: placeholder,
-                value: placeholder,
-                description: `Main placeholder: ${placeholder}`,
-              });
+              placeholderTemplate[placeholder] = '';
             }
           }
 
@@ -251,26 +214,21 @@ export class DocsAutomator implements INodeType {
               key.startsWith('line_items_') &&
               Array.isArray(response.placeholders[key])
             ) {
-              console.log(
-                `Processing line items for ${key}:`,
-                response.placeholders[key]
-              );
               for (const placeholder of response.placeholders[key]) {
-                const lineItemPlaceholder = `${key}.${placeholder}`;
-                placeholderOptions.push({
-                  name: lineItemPlaceholder,
-                  value: lineItemPlaceholder,
-                  description: `Line item placeholder: ${lineItemPlaceholder}`,
-                });
+                placeholderTemplate[`${key}.${placeholder}`] = '';
               }
             }
           }
 
-          console.log('Generated placeholder options:', placeholderOptions);
-          return placeholderOptions;
+          const templateJson = JSON.stringify(placeholderTemplate, null, 2);
+          const placeholderCount = Object.keys(placeholderTemplate).length;
+
+          const info = `📋 TEMPLATE - Copy this to the field below and replace empty values with your data (${placeholderCount} placeholders available):\n\n${templateJson}`;
+
+          return [{ name: info, value: 'template' }];
         } catch (error) {
-          console.error('Error loading placeholder options:', error);
-          return [];
+          console.error('Error loading placeholder info:', error);
+          return [{ name: 'Error loading placeholders', value: '' }];
         }
       },
     },
@@ -287,26 +245,31 @@ export class DocsAutomator implements INodeType {
     // For each item
     for (let i = 0; i < length; i++) {
       const automationId = this.getNodeParameter('automationId', i) as string;
-      const placeholderValuesRaw = this.getNodeParameter(
+      const placeholderValuesJson = this.getNodeParameter(
         'placeholderValues',
-        i
-      ) as IDataObject;
+        i,
+        '{}'
+      ) as string;
 
-      // Convert fixedCollection format to simple key-value object
-      const placeholderValues: IDataObject = {};
+      // Parse JSON input
+      let placeholderValues: IDataObject = {};
+      try {
+        placeholderValues = JSON.parse(placeholderValuesJson);
 
-      if (
-        placeholderValuesRaw.placeholder &&
-        Array.isArray(placeholderValuesRaw.placeholder)
-      ) {
-        for (const item of placeholderValuesRaw.placeholder) {
-          if (item.name && item.value !== undefined) {
-            placeholderValues[item.name] = item.value;
+        // Remove empty values to avoid sending unnecessary data
+        const filteredValues: IDataObject = {};
+        for (const [key, value] of Object.entries(placeholderValues)) {
+          if (value && String(value).trim() !== '') {
+            filteredValues[key] = value;
           }
         }
+        placeholderValues = filteredValues;
+      } catch (error) {
+        console.error('Error parsing placeholder JSON:', error);
+        placeholderValues = {};
       }
 
-      console.log('Converted placeholder values:', placeholderValues);
+      console.log('Final placeholder values:', placeholderValues);
 
       // Create the document
       const createDocOptions: OptionsWithUri = {

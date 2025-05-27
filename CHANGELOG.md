@@ -12,28 +12,28 @@
 ### Added
 
 - **Automation Selection**: Dropdown that fetches and displays all available automations from `/automations` endpoint
-- **Individual Placeholder Fields**: User-friendly interface with individual input fields for each placeholder
-- **Dynamic Placeholder Loading**: Available placeholders are automatically loaded when an automation is selected
-- **Smart Field Generation**: Separate input fields for both main placeholders and line item placeholders with descriptive labels
+- **Smart Template Generation**: Automatically generates a complete JSON template with all available placeholders pre-filled
+- **Efficient Placeholder Workflow**: Copy template → Replace values → Paste back - no more clicking "Add Placeholder" repeatedly
+- **Visual Placeholder Preview**: All available placeholders are displayed in an organized template format
 
 ### Improved
 
-- **User Experience**: Intuitive interface with individual labeled input fields for each placeholder
-- **Error Prevention**: No more JSON syntax errors - each placeholder has its own dedicated input field
-- **Field Discovery**: Placeholder names are automatically loaded and presented in dropdown selections
+- **User Experience**: Ultra-efficient template-based approach eliminates repetitive clicking
+- **Workflow Speed**: See all placeholders at once and fill them in bulk rather than one-by-one
+- **Template Convenience**: Pre-filled JSON template makes it easy to see structure and required fields
 - **API Integration**: Enhanced integration with both `/automations` and `/listPlaceholdersV2` endpoints
-- **Workflow Simplicity**: Select automation → add placeholder values → create document
+- **Workflow Simplicity**: Select automation → Copy template → Replace values → Execute
 
 ### Technical Changes
 
 - Simplified node structure by removing resource/operation selection entirely
-- Implemented fixedCollection type with dynamic placeholder loading via `loadOptionsMethod`
-- Enhanced placeholder loading to support both main placeholders and line item placeholders with proper descriptions
-- Added `getPlaceholderOptions` method to dynamically load available placeholders based on selected automation
+- Implemented smart template generation using `getPlaceholderInfo` method that creates pre-filled JSON templates
+- Enhanced placeholder loading to support both main placeholders and line item placeholders in organized template format
+- Streamlined execution method to parse JSON input and filter out empty values automatically
 - Improved error handling for API requests and authentication
 - Updated to use automations endpoint instead of requiring manual Doc ID entry
 - Fixed authentication issues by using direct API calls with Bearer token headers
-- Enhanced execution method to convert fixedCollection format to API-compatible key-value pairs
+- Optimized user experience by eliminating repetitive "Add Placeholder" button clicking
 
 ### Migration Guide
 
@@ -48,16 +48,16 @@ If you're upgrading from a previous version:
 **New workflow**:
 
 1. Select automation from dropdown (automatically populated)
-2. Click "Add Placeholder" to add placeholder entries
-3. For each placeholder: select name from dropdown → enter value in text field
-4. Execute to create document
+2. Copy the auto-generated JSON template from the notice
+3. Replace empty values with your actual data
+4. Paste the completed JSON into the placeholder values field
+5. Execute to create document
 
 **Example**:
 
 - Select automation: "Invoice Template"
-- Add Placeholder 1: Name = "customer_name", Value = "John Doe"
-- Add Placeholder 2: Name = "invoice_number", Value = "INV-001"
-- Add Placeholder 3: Name = "line_items_1.description", Value = "Product A"
+- Copy template: `{"customer_name": "", "invoice_number": "", "line_items_1.description": ""}`
+- Replace values: `{"customer_name": "John Doe", "invoice_number": "INV-001", "line_items_1.description": "Product A"}`
 - Execute to create document
 
-The new approach provides individual input fields for each placeholder, eliminating JSON syntax errors and making the interface much more user-friendly.
+The new approach provides all placeholders at once in a clean template format, eliminating repetitive clicking while maintaining JSON simplicity.
