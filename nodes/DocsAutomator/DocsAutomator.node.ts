@@ -133,6 +133,31 @@ export class DocsAutomator implements INodeType {
           },
         ],
       },
+      {
+        displayName: 'Preview Mode',
+        name: 'isPreview',
+        type: 'boolean',
+        default: false,
+        displayOptions: {
+          hide: {
+            automationId: [''],
+          },
+        },
+        description:
+          'Generate a preview of the document instead of the final version',
+      },
+      {
+        displayName: 'Async Processing',
+        name: 'async',
+        type: 'boolean',
+        default: false,
+        displayOptions: {
+          hide: {
+            automationId: [''],
+          },
+        },
+        description: 'Process the document creation asynchronously',
+      },
     ],
   };
 
@@ -469,11 +494,23 @@ export class DocsAutomator implements INodeType {
         // Get line items
         const lineItems = this.getNodeParameter('lineItems', i) as any;
 
+        // Get options
+        const isPreview = this.getNodeParameter('isPreview', i) as boolean;
+        const async = this.getNodeParameter('async', i) as boolean;
+
         let body: IDataObject = {};
 
         // Extract values from resourceMapper format (main placeholders)
         if (placeholderValues && placeholderValues.value) {
           body = { ...placeholderValues.value };
+        }
+
+        // Add processing options to the body
+        if (isPreview) {
+          body.isPreview = true;
+        }
+        if (async) {
+          body.async = true;
         }
 
         // Process line items
@@ -508,7 +545,6 @@ export class DocsAutomator implements INodeType {
           }
         }
 
-        // Create the document
         const createOptions: IRequestOptions = {
           method: 'POST',
           url: 'https://api.docsautomator.co/createDocument',

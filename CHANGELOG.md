@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0] - 2024-12-27
+
+### Added
+
+- **Preview Mode Toggle**: Added "Preview Mode" boolean option to generate document previews instead of final versions
+- **Async Processing Toggle**: Added "Async Processing" boolean option for asynchronous document creation
+- **API Parameter Support**: Both options are passed as query parameters to the DocsAutomator API
+
+### Enhanced
+
+- **Request Configuration**: Enhanced API request building with conditional query parameters
+- **User Control**: Users can now control document generation behavior through simple toggles
+- **API Integration**: Full support for DocsAutomator's `isPreview` and `async` parameters
+
+### Technical Implementation
+
+- Added `isPreview` boolean parameter with default `false`
+- Added `async` boolean parameter with default `false`
+- Enhanced execute method to conditionally add query parameters to API requests
+- Parameters are passed as strings ("true") in query parameters as expected by the API
+- Both toggles are hidden when no automation is selected for cleaner UI
+
 ## [0.4.4] - 2024-12-27
 
 ### Added
