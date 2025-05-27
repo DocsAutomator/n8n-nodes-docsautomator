@@ -12,27 +12,28 @@
 ### Added
 
 - **Automation Selection**: Dropdown that fetches and displays all available automations from `/automations` endpoint
-- **Automatic Placeholder Discovery**: Available placeholders are automatically fetched and displayed in the execution output
-- **Simplified Interface**: Clean, focused interface with just automation selection and placeholder values
-- **Enhanced Execution Output**: Returns document creation results along with available and used placeholder information
+- **Individual Placeholder Fields**: User-friendly interface with individual input fields for each placeholder
+- **Dynamic Placeholder Loading**: Available placeholders are automatically loaded when an automation is selected
+- **Smart Field Generation**: Separate input fields for both main placeholders and line item placeholders with descriptive labels
 
 ### Improved
 
-- **User Experience**: Streamlined interface focused on the core functionality
-- **Placeholder Visibility**: Available placeholders are automatically discovered and logged for easy reference
-- **Error Handling**: Better error handling with detailed placeholder information even when document creation fails
+- **User Experience**: Intuitive interface with individual labeled input fields for each placeholder
+- **Error Prevention**: No more JSON syntax errors - each placeholder has its own dedicated input field
+- **Field Discovery**: Placeholder names are automatically loaded and presented in dropdown selections
 - **API Integration**: Enhanced integration with both `/automations` and `/listPlaceholdersV2` endpoints
-- **Development Workflow**: First run shows available placeholders, second run creates document with provided values
+- **Workflow Simplicity**: Select automation → add placeholder values → create document
 
 ### Technical Changes
 
 - Simplified node structure by removing resource/operation selection entirely
-- Removed complex collection-based placeholder handling in favor of JSON input
-- Enhanced execution method to automatically fetch placeholders using `/listPlaceholdersV2` endpoint with correct `automationId` parameter
+- Implemented fixedCollection type with dynamic placeholder loading via `loadOptionsMethod`
+- Enhanced placeholder loading to support both main placeholders and line item placeholders with proper descriptions
+- Added `getPlaceholderOptions` method to dynamically load available placeholders based on selected automation
 - Improved error handling for API requests and authentication
 - Updated to use automations endpoint instead of requiring manual Doc ID entry
 - Fixed authentication issues by using direct API calls with Bearer token headers
-- Enhanced output to include both document creation results and placeholder metadata
+- Enhanced execution method to convert fixedCollection format to API-compatible key-value pairs
 
 ### Migration Guide
 
@@ -47,12 +48,16 @@ If you're upgrading from a previous version:
 **New workflow**:
 
 1. Select automation from dropdown (automatically populated)
-2. Run workflow once with empty placeholder values `{}` to see available placeholders
-3. Update placeholder values JSON with actual values and run again to create document
+2. Click "Add Placeholder" to add placeholder entries
+3. For each placeholder: select name from dropdown → enter value in text field
+4. Execute to create document
 
 **Example**:
 
-1. First run: `{}` → See available placeholders in execution output
-2. Second run: `{"customer_name": "John Doe", "invoice_number": "INV-001"}` → Create document
+- Select automation: "Invoice Template"
+- Add Placeholder 1: Name = "customer_name", Value = "John Doe"
+- Add Placeholder 2: Name = "invoice_number", Value = "INV-001"
+- Add Placeholder 3: Name = "line_items_1.description", Value = "Product A"
+- Execute to create document
 
-The new approach provides better visibility into available placeholders and a cleaner interface focused solely on document creation.
+The new approach provides individual input fields for each placeholder, eliminating JSON syntax errors and making the interface much more user-friendly.
