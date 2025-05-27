@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-docsautomator",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "n8n node for DocsAutomator",
   "keywords": [
     "n8n-community-node-package",
@@ -9,8 +9,9 @@
   "license": "MIT",
   "homepage": "https://docsautomator.co",
   "author": {
-    "name": "DocsAutomator",
-    "email": "info@docsautomator.co"
+    "name": "Rupert Hoffschmidt-McDonnell",
+    "email": "support@docsautomator.co",
+    "url": "https://docsautomator.co"
   },
   "repository": {
     "type": "git",
@@ -23,7 +24,7 @@
     "format": "prettier nodes credentials --write",
     "lint": "eslint 'nodes/**/*.ts' 'credentials/**/*.ts' package.json",
     "lintfix": "eslint 'nodes/**/*.ts' 'credentials/**/*.ts' package.json --fix",
-    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
+    "prepublishOnly": "npm run build && npm run lint"
   },
   "files": [
     "dist"
