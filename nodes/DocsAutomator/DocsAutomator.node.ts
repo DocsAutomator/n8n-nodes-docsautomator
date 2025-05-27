@@ -9,6 +9,7 @@ import {
   ResourceMapperFields,
   ResourceMapperField,
   IRequestOptions,
+  NodeOperationError,
 } from 'n8n-workflow';
 
 export class DocsAutomator implements INodeType {
@@ -33,7 +34,7 @@ export class DocsAutomator implements INodeType {
     ],
     properties: [
       {
-        displayName: 'Automation',
+        displayName: 'Automation Name or ID',
         name: 'automationId',
         type: 'options',
         typeOptions: {
@@ -41,7 +42,8 @@ export class DocsAutomator implements INodeType {
         },
         default: '',
         required: true,
-        description: 'Select the automation to use for document creation',
+        description:
+          'Select the automation to use for document creation. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Placeholder Values',
@@ -92,7 +94,7 @@ export class DocsAutomator implements INodeType {
             displayName: 'Line Item Sets',
             values: [
               {
-                displayName: 'Line Item Type',
+                displayName: 'Line Item Type Name or ID',
                 name: 'lineItemType',
                 type: 'options',
                 typeOptions: {
@@ -102,7 +104,7 @@ export class DocsAutomator implements INodeType {
                 required: true,
                 noDataExpression: true,
                 description:
-                  'Select the line item type (e.g., line_items_1, line_items_2)',
+                  'Select the line item type (e.g., line_items_1, line_items_2). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
               },
               {
                 displayName: 'Items (JSON)',
@@ -133,7 +135,7 @@ export class DocsAutomator implements INodeType {
           },
         },
         description:
-          'Generate a preview of the document instead of the final version',
+          'Whether to generate a preview of the document instead of the final version',
       },
       {
         displayName: 'Async Processing',
@@ -145,7 +147,7 @@ export class DocsAutomator implements INodeType {
             automationId: [''],
           },
         },
-        description: 'Process the document creation asynchronously',
+        description: 'Whether to process the document creation asynchronously',
       },
     ],
   };
@@ -187,7 +189,7 @@ export class DocsAutomator implements INodeType {
           if (!automations || automations.length === 0) {
             return [
               {
-                name: 'No automations found',
+                name: 'No Automations Found',
                 value: '',
               },
             ];
@@ -201,7 +203,7 @@ export class DocsAutomator implements INodeType {
           if (apiAutomations.length === 0) {
             return [
               {
-                name: 'No API automations found',
+                name: 'No API Automations Found',
                 value: '',
               },
             ];
@@ -222,7 +224,7 @@ export class DocsAutomator implements INodeType {
           console.error('Error fetching automations:', error);
           return [
             {
-              name: 'Error loading automations',
+              name: 'Error Loading Automations',
               value: '',
             },
           ];
@@ -239,7 +241,7 @@ export class DocsAutomator implements INodeType {
         if (!automationId) {
           return [
             {
-              name: 'Please select an automation first',
+              name: 'Please Select an Automation First',
               value: '',
             },
           ];
@@ -343,7 +345,7 @@ export class DocsAutomator implements INodeType {
           if (lineItemTypes.length === 0) {
             return [
               {
-                name: 'No line item types found for this automation',
+                name: 'No Line Item Types Found for This Automation',
                 value: '',
               },
             ];
@@ -473,7 +475,10 @@ export class DocsAutomator implements INodeType {
         const automationId = this.getNodeParameter('automationId', i) as string;
 
         if (!automationId) {
-          throw new Error('Please select an automation');
+          throw new NodeOperationError(
+            this.getNode(),
+            'Please select an automation'
+          );
         }
 
         // Get placeholder values from resourceMapper
@@ -528,7 +533,8 @@ export class DocsAutomator implements INodeType {
                   `Error parsing line items for ${lineItemSet.lineItemType}:`,
                   parseError
                 );
-                throw new Error(
+                throw new NodeOperationError(
+                  this.getNode(),
                   `Invalid JSON format for line items in ${lineItemSet.lineItemType}. Please check your JSON syntax.`
                 );
               }
@@ -565,7 +571,11 @@ export class DocsAutomator implements INodeType {
           });
           continue;
         }
-        throw error;
+        // If it's already a NodeOperationError, rethrow it, otherwise wrap it
+        if (error instanceof NodeOperationError) {
+          throw error;
+        }
+        throw new NodeOperationError(this.getNode(), error, { itemIndex: i });
       }
     }
 

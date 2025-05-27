@@ -21,8 +21,8 @@
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
-    "lint": "eslint nodes credentials package.json",
-    "lintfix": "eslint nodes credentials package.json --fix",
+    "lint": "eslint 'nodes/**/*.ts' 'credentials/**/*.ts' package.json",
+    "lintfix": "eslint 'nodes/**/*.ts' 'credentials/**/*.ts' package.json --fix",
     "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
   },
   "files": [
@@ -43,7 +43,9 @@
     "@types/nock": "^11.1.0",
     "@types/request-promise-native": "~1.0.15",
     "@types/ssh2": "^1.15.5",
+    "@typescript-eslint/eslint-plugin": "~6.21.0",
     "@typescript-eslint/parser": "~6.21.0",
+    "eslint": "^8.57.0",
     "eslint-plugin-n8n-nodes-base": "^1.11.0",
     "gulp": "^4.0.2",
     "n8n-core": "^1.94.0",
