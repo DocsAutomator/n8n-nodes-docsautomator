@@ -193,7 +193,21 @@ export class DocsAutomator implements INodeType {
             ];
           }
 
-          return automations.map((automation: any) => {
+          // Filter automations to only include those with datasource.name = "API"
+          const apiAutomations = automations.filter((automation: any) => {
+            return automation.dataSource?.name === 'API';
+          });
+
+          if (apiAutomations.length === 0) {
+            return [
+              {
+                name: 'No API automations found',
+                value: '',
+              },
+            ];
+          }
+
+          return apiAutomations.map((automation: any) => {
             const name =
               automation.name || automation.title || automation.id || 'Unnamed';
             const value =
