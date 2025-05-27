@@ -99,6 +99,8 @@ export class DocsAutomator implements INodeType {
                   loadOptionsMethod: 'getLineItemTypes',
                 },
                 default: '',
+                required: true,
+                noDataExpression: true,
                 description:
                   'Select the line item type (e.g., line_items_1, line_items_2)',
               },
@@ -110,19 +112,6 @@ export class DocsAutomator implements INodeType {
                 description:
                   'Array of objects where each object represents a row with placeholder key-value pairs',
                 hint: 'Example: [{"name": "Item 1", "quantity": 2, "price": 100}, {"name": "Item 2", "quantity": 1, "price": 50}]',
-                displayOptions: {
-                  hide: {
-                    lineItemType: [''],
-                  },
-                },
-              },
-              {
-                displayName: 'Available Placeholders',
-                name: 'availablePlaceholders',
-                type: 'notice',
-                default: '',
-                description:
-                  'Click to see available placeholders for the selected line item type',
                 displayOptions: {
                   hide: {
                     lineItemType: [''],
@@ -283,55 +272,92 @@ export class DocsAutomator implements INodeType {
 
           const lineItemTypes: INodePropertyOptions[] = [];
 
-          // Parse line item types from the response
+          // Collect all available line item types from the response
+          const allAvailableTypes = new Set<string>();
           if (response.placeholders) {
             // Look for keys that match the pattern "line_items_X"
             Object.keys(response.placeholders).forEach((key: string) => {
               if (key.match(/^line_items_\d+$/)) {
                 const lineItemPlaceholders = response.placeholders[key];
                 if (Array.isArray(lineItemPlaceholders)) {
-                  // Only add if not already selected
-                  if (!selectedLineItemTypes.has(key)) {
-                    // Extract the number and create a clean display name
-                    const match = key.match(/^line_items_(\d+)$/);
-                    const number = match ? match[1] : key;
-                    lineItemTypes.push({
-                      name: `Line Items ${number}`,
-                      value: key,
-                    });
-                  }
+                  allAvailableTypes.add(key);
                 }
               }
             });
           }
 
+          // Always include already selected items to prevent validation errors
+          selectedLineItemTypes.forEach((selectedType) => {
+            allAvailableTypes.add(selectedType);
+          });
+
+          // Build the options list - include ALL items to prevent validation errors
+          allAvailableTypes.forEach((key) => {
+            const match = key.match(/^line_items_(\d+)$/);
+            const number = match ? match[1] : key;
+            lineItemTypes.push({
+              name: `Line Items ${number}`,
+              value: key,
+            });
+          });
+
+          // Check if all API types are selected (for showing message)
+          const apiTypes = new Set<string>();
+          if (response.placeholders) {
+            Object.keys(response.placeholders).forEach((key: string) => {
+              if (key.match(/^line_items_\d+$/)) {
+                const lineItemPlaceholders = response.placeholders[key];
+                if (Array.isArray(lineItemPlaceholders)) {
+                  apiTypes.add(key);
+                }
+              }
+            });
+          }
+
+          const unselectedApiTypes = Array.from(apiTypes).filter(
+            (type) => !selectedLineItemTypes.has(type)
+          );
+
+          if (unselectedApiTypes.length === 0 && apiTypes.size > 0) {
+            // All available line item types have been added - add message at top
+            lineItemTypes.unshift({
+              name: 'All available line item types have been added',
+              value: '',
+            });
+          }
+
           if (lineItemTypes.length === 0) {
-            if (selectedLineItemTypes.size > 0) {
-              return [
-                {
-                  name: 'All available line item types have been added',
-                  value: '',
-                },
-              ];
-            } else {
-              return [
-                {
-                  name: 'No line item types found for this automation',
-                  value: '',
-                },
-              ];
-            }
+            return [
+              {
+                name: 'No line item types found for this automation',
+                value: '',
+              },
+            ];
           }
 
           return lineItemTypes;
         } catch (error) {
           console.error('Error fetching line item types:', error);
-          return [
-            {
-              name: 'Error loading line item types',
-              value: '',
-            },
-          ];
+
+          // Even on error, include any already selected items to prevent validation errors
+          const fallbackOptions: INodePropertyOptions[] = [];
+          if (selectedLineItemTypes.size > 0) {
+            selectedLineItemTypes.forEach((selectedType) => {
+              const match = selectedType.match(/^line_items_(\d+)$/);
+              const number = match ? match[1] : selectedType;
+              fallbackOptions.push({
+                name: `Line Items ${number}`,
+                value: selectedType,
+              });
+            });
+          }
+
+          fallbackOptions.push({
+            name: 'Error loading line item types - please refresh',
+            value: '',
+          });
+
+          return fallbackOptions;
         }
       },
     },
@@ -397,46 +423,8 @@ export class DocsAutomator implements INodeType {
             });
           }
 
-          // Add line item placeholders as informational fields (read-only)
-          if (response.placeholders) {
-            // Look for keys that match the pattern "line_items_X"
-            Object.keys(response.placeholders).forEach((key: string) => {
-              if (key.match(/^line_items_\d+$/)) {
-                const lineItemPlaceholders = response.placeholders[key];
-                if (Array.isArray(lineItemPlaceholders)) {
-                  // Add a header field for this line item type
-                  fields.push({
-                    id: `${key}_header`,
-                    displayName: `--- ${key
-                      .replace(/_/g, ' ')
-                      .toUpperCase()} (configured separately) ---`,
-                    defaultMatch: false,
-                    canBeUsedToMatch: false,
-                    required: false,
-                    display: true,
-                    type: 'string',
-                    readOnly: true,
-                  });
-
-                  // Add individual line item fields for reference
-                  lineItemPlaceholders.forEach((placeholder: string) => {
-                    fields.push({
-                      id: `${key}_${placeholder}`,
-                      displayName: `  ↳ ${placeholder
-                        .replace(/_/g, ' ')
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}`,
-                      defaultMatch: false,
-                      canBeUsedToMatch: false,
-                      required: false,
-                      display: true,
-                      type: 'string',
-                      readOnly: true,
-                    });
-                  });
-                }
-              }
-            });
-          }
+          // Line item placeholders are configured separately in the Line Items section
+          // No need to show them here as read-only fields
 
           if (fields.length === 0) {
             return {
@@ -445,19 +433,8 @@ export class DocsAutomator implements INodeType {
             };
           }
 
-          // Add helpful notice about line items
-          const hasLineItems =
-            response.placeholders &&
-            Object.keys(response.placeholders).some((key) =>
-              key.match(/^line_items_\d+$/)
-            );
-          const notice = hasLineItems
-            ? 'Note: Line item placeholders (shown with ↳) should be configured in the separate "Line Items" section below.'
-            : '';
-
           return {
             fields,
-            ...(notice && { emptyFieldsNotice: notice }),
           };
         } catch (error) {
           console.error('Error fetching placeholders:', error);
