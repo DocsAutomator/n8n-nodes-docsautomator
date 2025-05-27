@@ -3,8 +3,8 @@
     "strict": true,
     "module": "commonjs",
     "moduleResolution": "node",
-    "target": "es2019",
-    "lib": ["es2019", "es2020", "es2022"],
+    "target": "es2020",
+    "lib": ["es2020", "es2022"],
     "removeComments": true,
     "useUnknownInCatchVariables": false,
     "forceConsistentCasingInFileNames": true,
@@ -14,12 +14,17 @@
     "strictNullChecks": true,
     "preserveConstEnums": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "incremental": true,
     "declaration": true,
     "sourceMap": true,
     "outDir": "./dist/",
     "baseUrl": "./",
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": ["node_modules/n8n-workflow/dist/*"]
+    },
     "typeRoots": ["./node_modules/@types", "./types"]
   },
   "include": ["credentials/**/*", "nodes/**/*", "nodes/**/*.json", "types/**/*"]

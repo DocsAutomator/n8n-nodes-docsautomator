@@ -1,12 +1,13 @@
 # n8n-nodes-docsautomator
 
-This is an n8n community node for DocsAutomator, a powerful document automation tool. It includes nodes to create documents and work with automations.
+This is an n8n community node for DocsAutomator, a powerful document automation tool. It allows you to create documents automatically using your existing automations.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
 [Installation](#installation)  
 [Operations](#operations)  
 [Credentials](#credentials)  
+[Usage](#usage)  
 [Resources](#resources)
 
 ## Installation
@@ -17,69 +18,92 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 
 ### Document Creation
 
-- **Create Document**: Creates a document using a selected automation with smart template generation
-  - **Automation Selection**: Choose from a dropdown of all available automations
-  - **Smart Template Generation**: Automatically creates JSON templates with all available placeholders
-  - **Efficient Workflow**: Copy template, replace values, execute - no repetitive clicking required
+The DocsAutomator node focuses on one primary operation:
+
+- **Create Document**: Creates a document using a selected automation with customizable placeholder values
+
+## Credentials
+
+This node requires DocsAutomator API credentials:
+
+1. Log in to your DocsAutomator account
+2. Navigate to API settings
+3. Generate an API key
+4. In n8n, create new DocsAutomator credentials and enter your API key
 
 ## Usage
 
-### Creating Documents with Placeholders
+### How to Use the Node
 
-1. **Select Automation**: Choose from the dropdown of available automations (automatically loaded from your account)
-2. **Copy Template**: The node automatically generates a complete JSON template with all available placeholders
-3. **Replace Values**: Edit the copied template by replacing empty strings with your actual data
-4. **Execute**: Run the workflow to create your document with the specified placeholder values
+1. **Add the DocsAutomator node** to your workflow
 
-### Placeholder Types
+2. **Set up credentials**: Configure your DocsAutomator API credentials
 
-The node automatically handles both types of placeholders:
+3. **Select an automation**: Choose from the dropdown list of available automations
 
-- **Main Placeholders**: Simple placeholders like `customer_name`, `invoice_number`
-- **Line Item Placeholders**: Complex placeholders for repeating data like `line_items_1.description`, `line_items_1.quantity`
+4. **View available placeholders**:
 
-### Benefits of This Approach
+   - Click on the "Available Placeholders" dropdown
+   - You'll see all available placeholders for the selected automation
+   - An example JSON format is shown at the bottom of the dropdown
 
-- **Ultra-Efficient**: See all placeholders at once instead of adding them one by one
-- **Template-Based**: Pre-filled JSON template shows exactly what placeholders are available
-- **No Repetitive Clicking**: Single copy-paste operation replaces multiple "Add Placeholder" clicks
-- **Dynamic Loading**: All automations and placeholders are automatically loaded from your account
-- **Clear Structure**: JSON template format makes it easy to see relationships between placeholders
+5. **Enter placeholder values**:
+   - In the "Placeholder Values" field, enter a JSON object with your values
+   - Use the exact placeholder names shown in the dropdown
+   - You can use n8n expressions to pull data from previous nodes
 
 ### Example Workflow
 
-1. Add the DocsAutomator node to your workflow
-2. Configure your API credentials
-3. Choose an automation from the dropdown (e.g., "Invoice Template")
-4. Copy the auto-generated template from the notice field:
-   ```json
-   {
-     "customer_name": "",
-     "invoice_number": "",
-     "line_items_1.description": "",
-     "line_items_1.quantity": "",
-     "line_items_1.price": ""
-   }
-   ```
-5. Replace the empty values with your data:
+Here's a simple example of creating an invoice:
+
+1. Select the "Invoice Template" automation
+2. Click the "Available Placeholders" dropdown to see placeholders like:
+
+   - `customer_name (text)`
+   - `invoice_number (text)`
+   - `invoice_date (text)`
+   - Example JSON format shown in dropdown
+
+3. Enter placeholder values in JSON format:
    ```json
    {
      "customer_name": "John Doe",
      "invoice_number": "INV-001",
-     "line_items_1.description": "Product A",
-     "line_items_1.quantity": "2",
-     "line_items_1.price": "50.00"
+     "invoice_date": "2024-12-19"
    }
    ```
-6. Paste the completed JSON into the placeholder values field
-7. Execute the workflow to create your document
-8. Document is created and URLs are returned in the response
 
-## Credentials
+### Using Expressions
 
-To use the DocsAutomator node, you'll need to create an API key in your DocsAutomator account and configure it in n8n's credentials section.
+You can use n8n expressions to dynamically set values:
+
+```json
+{
+  "customer_name": "{{ $json.customer.name }}",
+  "invoice_number": "{{ $json.invoiceId }}",
+  "invoice_date": "{{ $now.format('yyyy-MM-dd') }}"
+}
+```
+
+### Tips
+
+- **Copy placeholder names exactly**: The placeholder names are case-sensitive
+- **Check the dropdown**: Always click the "Available Placeholders" dropdown to see the exact placeholder names and example format
+- **Use expressions**: Leverage n8n's expression system to pull data from previous nodes
+- **JSON validation**: Make sure your JSON is valid - the node will show an error if the syntax is incorrect
+- **Handle errors**: Enable "Continue On Fail" in the node settings to handle errors gracefully
+
+### Migration from Old Version
+
+If you're upgrading from an older version of this node:
+
+1. The node no longer requires manual Doc ID entry
+2. Resource and operation selections have been removed
+3. Placeholder values are entered as JSON instead of individual fields
+4. Use the "Available Placeholders" dropdown to see available placeholders and example format
 
 ## Resources
 
 - [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
-- [DocsAutomator API Documentation](https://docs.docsautomator.co/integrations-api/docsautomator-api)
+- [DocsAutomator API documentation](https://docs.docsautomator.co/)
+- [DocsAutomator website](https://docsautomator.co/)
