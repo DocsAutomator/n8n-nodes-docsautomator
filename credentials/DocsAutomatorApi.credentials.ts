@@ -1,6 +1,7 @@
 import {
 	ICredentialType,
 	INodeProperties,
+	ICredentialTestRequest,
 } from 'n8n-workflow';
 
 export class DocsAutomatorApi implements ICredentialType {
@@ -20,4 +21,13 @@ export class DocsAutomatorApi implements ICredentialType {
 			description: 'The API key for DocsAutomator',
 		},
 	];
+	test: ICredentialTestRequest = {
+		request: {
+			baseURL: 'https://api.docsautomator.co',
+			url: '/automations',
+			headers: {
+				Authorization: '=Bearer {{$credentials.apiKey}}',
+			},
+		},
+	};
 } 
