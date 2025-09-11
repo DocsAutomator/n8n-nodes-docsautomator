@@ -10,6 +10,7 @@ import {
   ResourceMapperField,
   IRequestOptions,
   NodeOperationError,
+  NodeConnectionType,
 } from 'n8n-workflow';
 
 export class DocsAutomator implements INodeType {
@@ -24,8 +25,8 @@ export class DocsAutomator implements INodeType {
     defaults: {
       name: 'DocsAutomator',
     },
-    inputs: ['main'],
-    outputs: ['main'],
+    inputs: [NodeConnectionType.Main],
+    outputs: [NodeConnectionType.Main],
     credentials: [
       {
         name: 'docsAutomatorApi',
