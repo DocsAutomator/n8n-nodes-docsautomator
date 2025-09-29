@@ -1,4 +1,5 @@
 import {
+	IAuthenticateGeneric,
 	ICredentialType,
 	INodeProperties,
 	ICredentialTestRequest,
@@ -21,6 +22,16 @@ export class DocsAutomatorApi implements ICredentialType {
 			description: 'The API key for DocsAutomator',
 		},
 	];
+
+	authenticate: IAuthenticateGeneric = {
+		type: 'generic',
+		properties: {
+			headers: {
+				Authorization: '=Bearer {{$credentials.apiKey}}',
+			},
+		},
+	};
+
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL: 'https://api.docsautomator.co',

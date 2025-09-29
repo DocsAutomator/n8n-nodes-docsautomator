@@ -8,9 +8,42 @@ import {
   INodePropertyOptions,
   ResourceMapperFields,
   ResourceMapperField,
-  IRequestOptions,
   NodeOperationError,
 } from 'n8n-workflow';
+
+// TypeScript interfaces for API responses
+interface IAutomation {
+  id?: string;
+  _id?: string;
+  docId?: string;
+  name?: string;
+  title?: string;
+  dataSource?: {
+    name: string;
+  };
+}
+
+interface IAutomationsResponse {
+  automations?: IAutomation[];
+  data?: IAutomation[];
+  results?: IAutomation[];
+}
+
+interface IPlaceholdersResponse {
+  placeholders?: {
+    main?: string[];
+    [key: string]: string[] | undefined;
+  };
+}
+
+interface ILineItemSet {
+  lineItemType: string;
+  items: string | any[];
+}
+
+interface ILineItems {
+  lineItemSets?: ILineItemSet[];
+}
 
 export class DocsAutomator implements INodeType {
   description: INodeTypeDescription = {
@@ -157,22 +190,18 @@ export class DocsAutomator implements INodeType {
       async getAutomations(
         this: ILoadOptionsFunctions
       ): Promise<INodePropertyOptions[]> {
-        const credentials = await this.getCredentials('docsAutomatorApi');
-        const apiKey = credentials.apiKey as string;
-
         try {
-          const options: IRequestOptions = {
-            method: 'GET',
-            url: 'https://api.docsautomator.co/automations',
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-            },
-            json: true,
-          };
+          const response = await this.helpers.httpRequestWithAuthentication.call(
+            this,
+            'docsAutomatorApi',
+            {
+              method: 'GET',
+              url: 'https://api.docsautomator.co/automations',
+              json: true,
+            }
+          ) as IAutomation[] | IAutomationsResponse;
 
-          const response = await this.helpers.request!(options);
-
-          let automations: any[] = [];
+          let automations: IAutomation[] = [];
 
           if (Array.isArray(response)) {
             automations = response;
@@ -196,7 +225,7 @@ export class DocsAutomator implements INodeType {
           }
 
           // Filter automations to only include those with datasource.name = "API"
-          const apiAutomations = automations.filter((automation: any) => {
+          const apiAutomations = automations.filter((automation: IAutomation) => {
             return automation.dataSource?.name === 'API';
           });
 
@@ -209,7 +238,7 @@ export class DocsAutomator implements INodeType {
             ];
           }
 
-          return apiAutomations.map((automation: any) => {
+          return apiAutomations.map((automation: IAutomation) => {
             const name =
               automation.name || automation.title || automation.id || 'Unnamed';
             const value =
@@ -221,7 +250,7 @@ export class DocsAutomator implements INodeType {
             };
           });
         } catch (error) {
-          console.error('Error fetching automations:', error);
+          this.logger.error('Error fetching automations', { error });
           return [
             {
               name: 'Error Loading Automations',
@@ -248,7 +277,7 @@ export class DocsAutomator implements INodeType {
         }
 
         // Get already selected line item types to filter them out
-        const lineItems = this.getCurrentNodeParameter('lineItems') as any;
+        const lineItems = this.getCurrentNodeParameter('lineItems') as ILineItems;
         const selectedLineItemTypes = new Set<string>();
 
         if (
@@ -256,35 +285,27 @@ export class DocsAutomator implements INodeType {
           lineItems.lineItemSets &&
           Array.isArray(lineItems.lineItemSets)
         ) {
-          lineItems.lineItemSets.forEach((lineItemSet: any) => {
+          lineItems.lineItemSets.forEach((lineItemSet: ILineItemSet) => {
             if (lineItemSet.lineItemType) {
               selectedLineItemTypes.add(lineItemSet.lineItemType);
             }
           });
         }
 
-        const credentials = await this.getCredentials('docsAutomatorApi');
-        const apiKey = credentials.apiKey as string;
-
         try {
-          const options: IRequestOptions = {
-            method: 'GET',
-            url: 'https://api.docsautomator.co/listPlaceholdersV2',
-            qs: {
-              automationId: automationId,
-            },
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-            },
-            json: true,
-          };
+          const response = await this.helpers.httpRequestWithAuthentication.call(
+            this,
+            'docsAutomatorApi',
+            {
+              method: 'GET',
+              url: 'https://api.docsautomator.co/listPlaceholdersV2',
+              qs: {
+                automationId: automationId,
+              },
+              json: true,
+            }
+          ) as IPlaceholdersResponse;
 
-          const response = await this.helpers.request!(options);
-
-          console.log(
-            'DocsAutomator getLineItemTypes API Response:',
-            JSON.stringify(response, null, 2)
-          );
 
           const lineItemTypes: INodePropertyOptions[] = [];
 
@@ -293,7 +314,7 @@ export class DocsAutomator implements INodeType {
           if (response.placeholders) {
             // Look for keys that match the pattern "line_items_X"
             Object.keys(response.placeholders).forEach((key: string) => {
-              if (key.match(/^line_items_\d+$/)) {
+              if (key.match(/^line_items_\d+$/) && response.placeholders) {
                 const lineItemPlaceholders = response.placeholders[key];
                 if (Array.isArray(lineItemPlaceholders)) {
                   allAvailableTypes.add(key);
@@ -321,7 +342,7 @@ export class DocsAutomator implements INodeType {
           const apiTypes = new Set<string>();
           if (response.placeholders) {
             Object.keys(response.placeholders).forEach((key: string) => {
-              if (key.match(/^line_items_\d+$/)) {
+              if (key.match(/^line_items_\d+$/) && response.placeholders) {
                 const lineItemPlaceholders = response.placeholders[key];
                 if (Array.isArray(lineItemPlaceholders)) {
                   apiTypes.add(key);
@@ -353,7 +374,7 @@ export class DocsAutomator implements INodeType {
 
           return lineItemTypes;
         } catch (error) {
-          console.error('Error fetching line item types:', error);
+          this.logger.error('Error fetching line item types', { error });
 
           // Even on error, include any already selected items to prevent validation errors
           const fallbackOptions: INodePropertyOptions[] = [];
@@ -393,28 +414,20 @@ export class DocsAutomator implements INodeType {
           };
         }
 
-        const credentials = await this.getCredentials('docsAutomatorApi');
-        const apiKey = credentials.apiKey as string;
-
         try {
-          const options: IRequestOptions = {
-            method: 'GET',
-            url: 'https://api.docsautomator.co/listPlaceholdersV2',
-            qs: {
-              automationId: automationId,
-            },
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-            },
-            json: true,
-          };
+          const response = await this.helpers.httpRequestWithAuthentication.call(
+            this,
+            'docsAutomatorApi',
+            {
+              method: 'GET',
+              url: 'https://api.docsautomator.co/listPlaceholdersV2',
+              qs: {
+                automationId: automationId,
+              },
+              json: true,
+            }
+          ) as IPlaceholdersResponse;
 
-          const response = await this.helpers.request!(options);
-
-          console.log(
-            'DocsAutomator API Response:',
-            JSON.stringify(response, null, 2)
-          );
 
           const fields: ResourceMapperField[] = [];
 
@@ -453,7 +466,7 @@ export class DocsAutomator implements INodeType {
             fields,
           };
         } catch (error) {
-          console.error('Error fetching placeholders:', error);
+          this.logger.error('Error fetching placeholders', { error });
           return {
             fields: [],
             emptyFieldsNotice: 'Error loading placeholders',
@@ -466,9 +479,6 @@ export class DocsAutomator implements INodeType {
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     const items = this.getInputData();
     const returnData: INodeExecutionData[] = [];
-
-    const credentials = await this.getCredentials('docsAutomatorApi');
-    const apiKey = credentials.apiKey as string;
 
     for (let i = 0; i < items.length; i++) {
       try {
@@ -488,7 +498,7 @@ export class DocsAutomator implements INodeType {
         ) as any;
 
         // Get line items
-        const lineItems = this.getNodeParameter('lineItems', i) as any;
+        const lineItems = this.getNodeParameter('lineItems', i) as ILineItems;
 
         // Get options
         const isPreview = this.getNodeParameter('isPreview', i) as boolean;
@@ -519,47 +529,89 @@ export class DocsAutomator implements INodeType {
             if (lineItemSet.lineItemType && lineItemSet.items) {
               try {
                 // Parse the JSON array of line items
-                const itemsArray =
-                  typeof lineItemSet.items === 'string'
-                    ? JSON.parse(lineItemSet.items)
-                    : lineItemSet.items;
-
-                if (Array.isArray(itemsArray)) {
-                  // Add line items to the body with the structure expected by DocsAutomator API
-                  body[lineItemSet.lineItemType] = itemsArray;
+                let itemsArray;
+                if (typeof lineItemSet.items === 'string') {
+                  const trimmedItems = lineItemSet.items.trim();
+                  if (!trimmedItems) {
+                    // Skip empty items
+                    continue;
+                  }
+                  try {
+                    itemsArray = JSON.parse(trimmedItems);
+                  } catch (jsonError: any) {
+                    throw new NodeOperationError(
+                      this.getNode(),
+                      `Invalid JSON format for line items in ${lineItemSet.lineItemType}: ${jsonError.message}`,
+                      {
+                        description: `Please ensure your JSON is valid. Example: [{"name": "Item 1", "quantity": 2}]`,
+                        itemIndex: i,
+                      }
+                    );
+                  }
+                } else {
+                  itemsArray = lineItemSet.items;
                 }
-              } catch (parseError) {
-                console.error(
-                  `Error parsing line items for ${lineItemSet.lineItemType}:`,
-                  parseError
-                );
+
+                if (!Array.isArray(itemsArray)) {
+                  throw new NodeOperationError(
+                    this.getNode(),
+                    `Line items for ${lineItemSet.lineItemType} must be an array`,
+                    {
+                      description: `Expected an array but got ${typeof itemsArray}`,
+                      itemIndex: i,
+                    }
+                  );
+                }
+
+                // Validate each item in the array is an object
+                for (let idx = 0; idx < itemsArray.length; idx++) {
+                  if (typeof itemsArray[idx] !== 'object' || itemsArray[idx] === null) {
+                    throw new NodeOperationError(
+                      this.getNode(),
+                      `Invalid item at index ${idx} in ${lineItemSet.lineItemType}`,
+                      {
+                        description: `Each line item must be an object with key-value pairs`,
+                        itemIndex: i,
+                      }
+                    );
+                  }
+                }
+
+                // Add line items to the body with the structure expected by DocsAutomator API
+                body[lineItemSet.lineItemType] = itemsArray;
+              } catch (error) {
+                // Re-throw if it's already a NodeOperationError
+                if (error instanceof NodeOperationError) {
+                  throw error;
+                }
+                // Otherwise wrap it
                 throw new NodeOperationError(
                   this.getNode(),
-                  `Invalid JSON format for line items in ${lineItemSet.lineItemType}. Please check your JSON syntax.`
+                  `Error processing line items for ${lineItemSet.lineItemType}: ${(error as Error).message}`,
+                  { itemIndex: i }
                 );
               }
             }
           }
         }
 
-        const createOptions: IRequestOptions = {
-          method: 'POST',
-          url: 'https://api.docsautomator.co/createDocument',
-          qs: {
-            docId: automationId,
-          },
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body,
-          json: true,
-        };
-
-        const response = await this.helpers.request!(createOptions);
+        const response = await this.helpers.httpRequestWithAuthentication.call(
+          this,
+          'docsAutomatorApi',
+          {
+            method: 'POST',
+            url: 'https://api.docsautomator.co/createDocument',
+            qs: {
+              docId: automationId,
+            },
+            body,
+            json: true,
+          }
+        );
 
         returnData.push({
           json: response,
-          pairedItem: { item: i },
+          pairedItem: i,
         });
       } catch (error: any) {
         if (this.continueOnFail()) {
@@ -567,7 +619,7 @@ export class DocsAutomator implements INodeType {
             json: {
               error: error.message,
             },
-            pairedItem: { item: i },
+            pairedItem: i,
           });
           continue;
         }
