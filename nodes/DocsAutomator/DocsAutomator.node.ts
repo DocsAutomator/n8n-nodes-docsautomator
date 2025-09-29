@@ -11,7 +11,6 @@ import {
   NodeOperationError,
 } from 'n8n-workflow';
 
-// TypeScript interfaces for API responses
 interface IAutomation {
   id?: string;
   _id?: string;
@@ -191,15 +190,16 @@ export class DocsAutomator implements INodeType {
         this: ILoadOptionsFunctions
       ): Promise<INodePropertyOptions[]> {
         try {
-          const response = await this.helpers.httpRequestWithAuthentication.call(
-            this,
-            'docsAutomatorApi',
-            {
-              method: 'GET',
-              url: 'https://api.docsautomator.co/automations',
-              json: true,
-            }
-          ) as IAutomation[] | IAutomationsResponse;
+          const response =
+            (await this.helpers.httpRequestWithAuthentication.call(
+              this,
+              'docsAutomatorApi',
+              {
+                method: 'GET',
+                url: 'https://api.docsautomator.co/automations',
+                json: true,
+              }
+            )) as IAutomation[] | IAutomationsResponse;
 
           let automations: IAutomation[] = [];
 
@@ -225,9 +225,11 @@ export class DocsAutomator implements INodeType {
           }
 
           // Filter automations to only include those with datasource.name = "API"
-          const apiAutomations = automations.filter((automation: IAutomation) => {
-            return automation.dataSource?.name === 'API';
-          });
+          const apiAutomations = automations.filter(
+            (automation: IAutomation) => {
+              return automation.dataSource?.name === 'API';
+            }
+          );
 
           if (apiAutomations.length === 0) {
             return [
@@ -277,7 +279,9 @@ export class DocsAutomator implements INodeType {
         }
 
         // Get already selected line item types to filter them out
-        const lineItems = this.getCurrentNodeParameter('lineItems') as ILineItems;
+        const lineItems = this.getCurrentNodeParameter(
+          'lineItems'
+        ) as ILineItems;
         const selectedLineItemTypes = new Set<string>();
 
         if (
@@ -293,19 +297,19 @@ export class DocsAutomator implements INodeType {
         }
 
         try {
-          const response = await this.helpers.httpRequestWithAuthentication.call(
-            this,
-            'docsAutomatorApi',
-            {
-              method: 'GET',
-              url: 'https://api.docsautomator.co/listPlaceholdersV2',
-              qs: {
-                automationId: automationId,
-              },
-              json: true,
-            }
-          ) as IPlaceholdersResponse;
-
+          const response =
+            (await this.helpers.httpRequestWithAuthentication.call(
+              this,
+              'docsAutomatorApi',
+              {
+                method: 'GET',
+                url: 'https://api.docsautomator.co/listPlaceholdersV2',
+                qs: {
+                  automationId: automationId,
+                },
+                json: true,
+              }
+            )) as IPlaceholdersResponse;
 
           const lineItemTypes: INodePropertyOptions[] = [];
 
@@ -415,19 +419,19 @@ export class DocsAutomator implements INodeType {
         }
 
         try {
-          const response = await this.helpers.httpRequestWithAuthentication.call(
-            this,
-            'docsAutomatorApi',
-            {
-              method: 'GET',
-              url: 'https://api.docsautomator.co/listPlaceholdersV2',
-              qs: {
-                automationId: automationId,
-              },
-              json: true,
-            }
-          ) as IPlaceholdersResponse;
-
+          const response =
+            (await this.helpers.httpRequestWithAuthentication.call(
+              this,
+              'docsAutomatorApi',
+              {
+                method: 'GET',
+                url: 'https://api.docsautomator.co/listPlaceholdersV2',
+                qs: {
+                  automationId: automationId,
+                },
+                json: true,
+              }
+            )) as IPlaceholdersResponse;
 
           const fields: ResourceMapperField[] = [];
 
@@ -565,7 +569,10 @@ export class DocsAutomator implements INodeType {
 
                 // Validate each item in the array is an object
                 for (let idx = 0; idx < itemsArray.length; idx++) {
-                  if (typeof itemsArray[idx] !== 'object' || itemsArray[idx] === null) {
+                  if (
+                    typeof itemsArray[idx] !== 'object' ||
+                    itemsArray[idx] === null
+                  ) {
                     throw new NodeOperationError(
                       this.getNode(),
                       `Invalid item at index ${idx} in ${lineItemSet.lineItemType}`,
