@@ -626,7 +626,7 @@ export class DocsAutomator implements INodeType {
             json: {
               error: error.message,
             },
-            pairedItem: i,
+            pairedItem: { item: i },
           });
           continue;
         }
