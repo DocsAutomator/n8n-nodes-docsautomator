@@ -618,7 +618,7 @@ export class DocsAutomator implements INodeType {
 
         returnData.push({
           json: response,
-          pairedItem: i,
+          pairedItem: { item: i },
         });
       } catch (error: any) {
         if (this.continueOnFail()) {
