@@ -51,7 +51,7 @@ export class DocsAutomator implements INodeType {
     icon: 'file:docsautomator-icon.svg',
     group: ['transform'],
     version: 1,
-    subtitle: 'Create Document',
+    subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
     description: 'Create and manage documents with DocsAutomator',
     defaults: {
       name: 'DocsAutomator',
@@ -66,6 +66,39 @@ export class DocsAutomator implements INodeType {
     ],
     properties: [
       {
+        displayName: 'Resource',
+        name: 'resource',
+        type: 'options',
+        noDataExpression: true,
+        options: [
+          {
+            name: 'Document',
+            value: 'document',
+          },
+        ],
+        default: 'document',
+      },
+      {
+        displayName: 'Operation',
+        name: 'operation',
+        type: 'options',
+        noDataExpression: true,
+        displayOptions: {
+          show: {
+            resource: ['document'],
+          },
+        },
+        options: [
+          {
+            name: 'Create',
+            value: 'create',
+            description: 'Create a new document from an automation',
+            action: 'Create a document',
+          },
+        ],
+        default: 'create',
+      },
+      {
         displayName: 'Automation Name or ID',
         name: 'automationId',
         type: 'options',
@@ -74,6 +107,12 @@ export class DocsAutomator implements INodeType {
         },
         default: '',
         required: true,
+        displayOptions: {
+          show: {
+            resource: ['document'],
+            operation: ['create'],
+          },
+        },
         description:
           'Select the automation to use for document creation. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
@@ -98,6 +137,10 @@ export class DocsAutomator implements INodeType {
           },
         },
         displayOptions: {
+          show: {
+            resource: ['document'],
+            operation: ['create'],
+          },
           hide: {
             automationId: [''],
           },
@@ -114,6 +157,10 @@ export class DocsAutomator implements INodeType {
           multipleValues: true,
         },
         displayOptions: {
+          show: {
+            resource: ['document'],
+            operation: ['create'],
+          },
           hide: {
             automationId: [''],
           },
@@ -162,6 +209,10 @@ export class DocsAutomator implements INodeType {
         type: 'boolean',
         default: false,
         displayOptions: {
+          show: {
+            resource: ['document'],
+            operation: ['create'],
+          },
           hide: {
             automationId: [''],
           },
@@ -175,6 +226,10 @@ export class DocsAutomator implements INodeType {
         type: 'boolean',
         default: false,
         displayOptions: {
+          show: {
+            resource: ['document'],
+            operation: ['create'],
+          },
           hide: {
             automationId: [''],
           },
