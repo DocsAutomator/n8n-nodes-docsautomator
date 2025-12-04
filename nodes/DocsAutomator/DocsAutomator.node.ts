@@ -279,17 +279,18 @@ export class DocsAutomator implements INodeType {
             ];
           }
 
-          // Filter automations to only include those with datasource.name = "API"
+          // Filter automations to only include those with datasource.name = "API" or "n8n"
           const apiAutomations = automations.filter(
             (automation: IAutomation) => {
-              return automation.dataSource?.name === 'API';
+              const dataSourceName = automation.dataSource?.name;
+              return dataSourceName === 'API' || dataSourceName === 'n8n';
             }
           );
 
           if (apiAutomations.length === 0) {
             return [
               {
-                name: 'No API Automations Found',
+                name: 'No API or N8n Automations Found',
                 value: '',
               },
             ];
