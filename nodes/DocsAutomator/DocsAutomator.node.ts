@@ -165,7 +165,7 @@ export class DocsAutomator implements INodeType {
           {
             name: 'Get Many',
             value: 'getAll',
-            description: 'Get all automations',
+            description: 'Get many automations',
             action: 'Get many automations',
           },
           {
@@ -244,7 +244,7 @@ export class DocsAutomator implements INodeType {
             name: 'Duplicate Google Doc',
             value: 'duplicateGoogleDoc',
             description: 'Duplicate a Google Doc template',
-            action: 'Duplicate a Google Doc template',
+            action: 'Duplicate a google doc template',
           },
         ],
         default: 'duplicateGoogleDoc',
@@ -296,12 +296,12 @@ export class DocsAutomator implements INodeType {
         name: 'dataSourceName',
         type: 'options',
         options: [
-          { name: 'API', value: 'API' },
           { name: 'Airtable', value: 'Airtable' },
+          { name: 'API', value: 'API' },
           { name: 'ClickUp', value: 'ClickUp' },
           { name: 'Glide', value: 'Glide' },
           { name: 'Google Sheets', value: 'Google Sheets' },
-          { name: 'n8n', value: 'n8n' },
+          { name: 'N8n', value: 'n8n' },
           { name: 'Noloco', value: 'Noloco' },
           { name: 'SmartSuite', value: 'SmartSuite' },
           { name: 'Zapier', value: 'Zapier' },
@@ -332,11 +332,32 @@ export class DocsAutomator implements INodeType {
         },
         options: [
           {
-            displayName: 'Title',
-            name: 'title',
+            displayName: 'Active',
+            name: 'isActive',
+            type: 'boolean',
+            default: true,
+            description: 'Whether the automation is active',
+          },
+          {
+            displayName: 'Attachment Field',
+            name: 'attachmentField',
             type: 'string',
             default: '',
-            description: 'New name for the automation',
+            description: 'Field to use for attachments',
+          },
+          {
+            displayName: 'Document Name Field',
+            name: 'newDocumentNameField',
+            type: 'string',
+            default: '',
+            description: 'Field to use for naming generated documents',
+          },
+          {
+            displayName: 'Format Numbers with Locale',
+            name: 'formatNumbersWithLocale',
+            type: 'boolean',
+            default: false,
+            description: 'Whether to format numbers according to the locale',
           },
           {
             displayName: 'Google Doc Template Link',
@@ -354,20 +375,6 @@ export class DocsAutomator implements INodeType {
             description: 'Locale for number/date formatting (e.g., en-us, de-de)',
           },
           {
-            displayName: 'Active',
-            name: 'isActive',
-            type: 'boolean',
-            default: true,
-            description: 'Whether the automation is active',
-          },
-          {
-            displayName: 'Format Numbers with Locale',
-            name: 'formatNumbersWithLocale',
-            type: 'boolean',
-            default: false,
-            description: 'Whether to format numbers according to the locale',
-          },
-          {
             displayName: 'PDF Expiration (Days)',
             name: 'pdfExpiration',
             type: 'number',
@@ -376,25 +383,18 @@ export class DocsAutomator implements INodeType {
               'Number of days until the PDF link expires (0 = no expiration)',
           },
           {
-            displayName: 'Document Name Field',
-            name: 'newDocumentNameField',
-            type: 'string',
-            default: '',
-            description: 'Field to use for naming generated documents',
-          },
-          {
-            displayName: 'Attachment Field',
-            name: 'attachmentField',
-            type: 'string',
-            default: '',
-            description: 'Field to use for attachments',
-          },
-          {
             displayName: 'Save as Google Doc',
             name: 'saveGoogleDoc',
             type: 'boolean',
             default: false,
             description: 'Whether to save the output as a Google Doc',
+          },
+          {
+            displayName: 'Title',
+            name: 'title',
+            type: 'string',
+            default: '',
+            description: 'New name for the automation',
           },
         ],
       },
@@ -672,7 +672,7 @@ export class DocsAutomator implements INodeType {
           if (apiAutomations.length === 0) {
             return [
               {
-                name: 'No API or n8n Automations Found',
+                name: 'No API or N8n Automations Found',
                 value: '',
               },
             ];
